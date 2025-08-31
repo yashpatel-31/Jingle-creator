@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Generative Advertisement Jingle Creator</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/popup.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Generative Advertisement Jingle Creator</h1>
+        <form id="jingleForm">
+            <label for="product">Product/Brand Name:</label>
+            <input type="text" id="product" name="product" required>
+
+            <label for="audience">Target Audience:</label>
+            <input type="text" id="audience" name="audience" required>
+
+            <label for="style">Style of Jingle:</label>
+            <select id="style" name="style" required>
+                <option value="funny">Funny</option>
+                <option value="emotional">Emotional</option>
+                <option value="energetic">Energetic</option>
+                <option value="inspiring">Inspiring</option>
+                <option value="cool">Cool</option>
+            </select>
+
+            <button type="submit">Generate Jingle</button>
+        </form>
+        <div id="result" style="display:none;">
+            <h2>Generated Jingle</h2>
+            <p id="jingleText"></p>
+            <audio id="jingleAudio" controls style="width:100%; margin-top:10px;"></audio>
+            <a id="downloadBtn" href="#" download style="display:none;">Download Jingle (MP3)</a>
+        </div>
+        <div id="error" class="error"></div>
+    </div>
+    <script>
+        const form = document.getElementById('jingleForm');
+        const resultDiv = document.getElementById('result');
+        const jingleText = document.getElementById('jingleText');
+        const jingleAudio = document.getElementById('jingleAudio');
+        const errorDiv = document.getElementById('error');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            errorDiv.textContent = '';
+            resultDiv.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            jingleAudio.src = '';
+            jingleText.textContent = '';
+            showPopup('Generating your English & Hinglish jingle...');
+            const product = form.product.value;
+            const audience = form.audience.value;
+            const style = form.style.value;
+            try {
+                const res = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({product, audience, style})
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    errorDiv.textContent = data.error || 'Error occurred.';
+                    return;
+                }
+                jingleText.textContent = data.jingle;
+                jingleAudio.src = data.audio_url;
+                downloadBtn.href = data.download_url;
+                downloadBtn.style.display = 'inline-block';
+                resultDiv.style.display = 'block';
+            } catch (err) {
+                errorDiv.textContent = 'Network error. Please try again.';
+            }
+        });
+    </script>
+</body>
+</html>
