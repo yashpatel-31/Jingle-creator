@@ -8,33 +8,40 @@
     <script src="/static/popup.js"></script>
 </head>
 <body>
-    <div class="container">
+    <div class="container formal-ui">
         <h1>AI Generative Advertisement Jingle Creator</h1>
         <form id="jingleForm">
-            <label for="product">Product/Brand Name:</label>
-            <input type="text" id="product" name="product" required>
-
-            <label for="audience">Target Audience:</label>
-            <input type="text" id="audience" name="audience" required>
-
-            <label for="style">Style of Jingle:</label>
-            <select id="style" name="style" required>
-                <option value="funny">Funny</option>
-                <option value="emotional">Emotional</option>
-                <option value="energetic">Energetic</option>
-                <option value="inspiring">Inspiring</option>
-                <option value="cool">Cool</option>
-            </select>
-
-            <button type="submit">Generate Jingle</button>
+            <div class="form-group">
+                <label for="product">Product/Brand Name</label>
+                <input type="text" id="product" name="product" placeholder="e.g. Vicco Turmeric" required>
+            </div>
+            <div class="form-group">
+                <label for="audience">Target Audience</label>
+                <input type="text" id="audience" name="audience" placeholder="e.g. Teenagers, Women" required>
+            </div>
+            <div class="form-group">
+                <label for="style">Style of Jingle</label>
+                <select id="style" name="style" required>
+                    <option value="funny">Funny</option>
+                    <option value="emotional">Emotional</option>
+                    <option value="energetic">Energetic</option>
+                    <option value="inspiring">Inspiring</option>
+                    <option value="cool">Cool</option>
+                </select>
+            </div>
+            <button type="submit" id="generateBtn">Generate Jingle</button>
         </form>
         <div id="result" style="display:none;">
             <h2>Generated Jingle</h2>
-            <p id="jingleText"></p>
+            <div id="jingleText" class="jingle-output"></div>
             <audio id="jingleAudio" controls style="width:100%; margin-top:10px;"></audio>
             <a id="downloadBtn" href="#" download style="display:none;">Download Jingle (MP3)</a>
         </div>
         <div id="error" class="error"></div>
+    </div>
+    <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+        <div class="spinner"></div>
+        <div class="loading-text">Generating your jingle, please wait...</div>
     </div>
     <script>
         const form = document.getElementById('jingleForm');
@@ -44,6 +51,7 @@
         const errorDiv = document.getElementById('error');
         const downloadBtn = document.getElementById('downloadBtn');
 
+        const loadingOverlay = document.getElementById('loadingOverlay');
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             errorDiv.textContent = '';
@@ -52,6 +60,7 @@
             jingleAudio.src = '';
             jingleText.textContent = '';
             showPopup('Generating your English & Hinglish jingle...');
+            loadingOverlay.style.display = 'flex';
             const product = form.product.value;
             const audience = form.audience.value;
             const style = form.style.value;
@@ -62,16 +71,25 @@
                     body: JSON.stringify({product, audience, style})
                 });
                 const data = await res.json();
+                loadingOverlay.style.display = 'none';
                 if (!res.ok) {
                     errorDiv.textContent = data.error || 'Error occurred.';
                     return;
                 }
-                jingleText.textContent = data.jingle;
+                // Show both English and Hinglish in formatted way
+                const jingleRaw = data.jingle || '';
+                let eng = '', hing = '';
+                const engMatch = jingleRaw.match(/English:\s*([\s\S]*?)Hinglish:/i);
+                const hingMatch = jingleRaw.match(/Hinglish:\s*([\s\S]*)/i);
+                if (engMatch) eng = engMatch[1].trim();
+                if (hingMatch) hing = hingMatch[1].trim();
+                jingleText.innerHTML = `<b>English:</b><br>${eng}<br><br><b>Hinglish:</b><br>${hing}`;
                 jingleAudio.src = data.audio_url;
                 downloadBtn.href = data.download_url;
                 downloadBtn.style.display = 'inline-block';
                 resultDiv.style.display = 'block';
             } catch (err) {
+                loadingOverlay.style.display = 'none';
                 errorDiv.textContent = 'Network error. Please try again.';
             }
         });
